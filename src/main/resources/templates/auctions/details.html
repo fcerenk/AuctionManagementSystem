@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(title='Auction Details')}"></head>
+
+<body>
+<nav th:replace="~{fragments/layout :: nav}"></nav>
+
+<main class="container">
+
+    <div th:if="${param.success}" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        ✅ <strong>Bid placed successfully!</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+        ❌ <strong th:text="${error}">Error</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="mb-3">
+        <a th:if="${auction.gallery != null}"
+           th:href="@{/galleries/{id}(id=${auction.gallery.id})}"
+           class="btn btn-outline-secondary btn-sm shadow-sm">
+            ← Back to Gallery
+        </a>
+        <a th:if="${auction.gallery == null}"
+           href="/auctions"
+           class="btn btn-outline-secondary btn-sm shadow-sm">
+            ← Back to Auctions
+        </a>
+    </div>
+
+    <div class="mb-5 text-center bg-white p-4 rounded shadow-sm border-top border-4 border-dark">
+        <h2 class="text-uppercase auction-header" th:text="${auction.name}">Auction Name</h2>
+        <h5 class="text-muted mb-0">
+            Starts: <span th:text="${#temporals.format(auction.startTime, 'dd MMM yyyy HH:mm')}"></span>
+            &nbsp;|&nbsp;
+            Ends: <strong class="text-danger"
+                          th:text="${#temporals.format(auction.endTime, 'dd MMM yyyy HH:mm')}"></strong>
+        </h5>
+    </div>
+
+    <div th:each="item : ${auctionItems}" class="card custom-card shadow-sm mb-5 border-0">
+        <div class="card-body p-4">
+
+            <div th:if="${item.status.name() == 'EXTENDED'}"
+                 class="alert alert-warning fw-bold text-center shadow-sm mb-3" role="alert">
+                ⚠ AUCTION TIME FOR '<span th:text="${item.artWork.title}"></span>'
+                EXTENDED BY +5 MIN — LATE BIDDING RULE TRIGGERED!
+            </div>
+
+            <div th:if="${item.status.name() == 'SOLD'}"
+                 class="alert alert-success fw-bold text-center shadow-sm mb-3">
+                🏆 SOLD — Final price: $<span th:text="${item.currentHighestBid}"></span>
+            </div>
+            <div th:if="${item.status.name() == 'WITHDRAWN'}"
+                 class="alert alert-secondary fw-bold text-center shadow-sm mb-3">
+                ❌ WITHDRAWN — Reserve price not met (reserve: $<span th:text="${item.reservePrice}"></span>)
+            </div>
+
+            <div class="row">
+
+                <div class="col-md-7 border-end pe-4">
+                    <h4 class="mb-3 auction-header border-bottom pb-2">Artwork Details</h4>
+
+                    <div class="row mb-4">
+                        <div class="col-md-5">
+                            <img th:src="@{'/images/art_' + ${item.artWork.id} + '.jpg'}"
+                                 class="shadow-sm border w-100"
+                                 style="object-fit:cover; border-radius:8px; max-height:200px;"
+                                 alt="Artwork Image"
+                                 onerror="this.onerror=null;this.src='/images/artwork_placeholder.jpg';">
+                        </div>
+                        <div class="col-md-7">
+                            <h5 class="text-primary fw-bold" th:text="${item.artWork.title}">Title</h5>
+                            <p class="mb-1"><strong>Artist:</strong>
+                                <span th:text="${item.artWork.artist.member.name} + ' ' + ${item.artWork.artist.member.surname}"></span>
+                            </p>
+                            <p class="mb-1"><strong>Made Year:</strong> <span th:text="${item.artWork.madeYear}"></span>
+                            </p>
+                            <p class="mb-1"><strong>Age of Work:</strong> <span
+                                    th:text="${item.artWork.ageOfWork}"></span> years</p>
+                            <p class="mb-1"><strong>Category:</strong> <span th:text="${item.artWork.category}"></span>
+                            </p>
+                            <p class="mb-0"><strong>Dimensions:</strong>
+                                <span th:text="${'W: ' + item.artWork.dimension.width + 'cm, H: ' + item.artWork.dimension.height + 'cm' +
+                                               (item.artWork.dimension.depth != null and item.artWork.dimension.depth > 0
+                                                ? ', D: ' + item.artWork.dimension.depth + 'cm' : '')}"></span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <h5 class="mt-4 auction-header">Bid History</h5>
+                    <div class="table-responsive bid-history-table border rounded shadow-sm">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-dark">
+                            <tr>
+                                <th>Collector</th>
+                                <th>Bid Time</th>
+                                <th>Amount</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="bid : ${item.bids}">
+                                <td th:text="${bid.collector.member.name} + ' ' + ${bid.collector.member.surname}"></td>
+                                <td th:text="${#temporals.format(bid.bidTime, 'dd MMM HH:mm')}"></td>
+                                <td class="text-success fw-bold" th:text="'$' + ${bid.bidAmount}"></td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(item.bids)}">
+                                <td colspan="3" class="text-center text-muted py-3">No bids yet — be the first!</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h5 class="mt-4 auction-header">Provenance (Recording audit trail)</h5>
+                    <div class="table-responsive border rounded shadow-sm">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-secondary">
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Recorded by</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="rec : ${item.artWork.recordings}">
+                                <td th:text="${#temporals.format(rec.recordByDate, 'dd MMM yyyy')}"></td>
+                                <td th:text="${rec.description}"></td>
+                                <td th:text="${rec.employee.name} + ' ' + ${rec.employee.surname}"></td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(item.artWork.recordings)}">
+                                <td colspan="3" class="text-muted text-center py-2">No recordings yet.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="col-md-5 ps-4">
+                    <h4 class="mb-3 auction-header border-bottom pb-2">Auction Item Details</h4>
+
+                    <div class="p-3 bg-light border rounded mb-4 shadow-sm">
+                        <p class="mb-1 text-muted">Opening Price:
+                            <span th:text="'$' + ${item.openingPrice}"></span>
+                        </p>
+                        <h3 class="text-success mb-2 fw-bold">
+                            Current Bid: <span th:text="'$' + ${item.currentHighestBid}"></span>
+                        </h3>
+                        <p class="mb-2 text-danger fw-bold">
+                            <small>⚠ Minimum Acceptable Bid:
+                                <span th:text="'$' + (${item.currentHighestBid} + ${item.minimumIncrement})"></span>
+                            </small>
+                        </p>
+                        <p class="mb-0">
+                            <strong>Status:</strong>
+                            <span class="badge"
+                                  th:classappend="${item.status.name() == 'ACTIVE_BIDDING' ? 'bg-primary' :
+                                                   item.status.name() == 'EXTENDED'        ? 'bg-warning text-dark' :
+                                                   item.status.name() == 'SOLD'           ? 'bg-success' :
+                                                   item.status.name() == 'PENDING'        ? 'bg-info text-dark' : 'bg-secondary'}"
+                                  th:text="${item.status}">STATUS</span>
+                        </p>
+                    </div>
+
+                    <div class="card bg-dark text-light shadow-lg border-0 rounded-3"
+                         th:if="${item.status.name() == 'ACTIVE_BIDDING' or item.status.name() == 'EXTENDED'}">
+                        <div class="card-body p-4">
+                            <h5 class="card-title fw-bold text-center mb-3">PLACE A BID</h5>
+
+                            <form th:action="@{/auctions/{auctionId}/items/{itemId}/bid(auctionId=${auction.id},itemId=${item.auctionItemId})}"
+                                  method="post"
+                                  onsubmit="return validateBidForm(this)">
+
+                                <input type="hidden" name="collectorId" class="targetCollectorId" value="">
+
+                                <div class="mb-3">
+                                    <label class="form-label text-light">Your bid amount ($)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-secondary text-light border-secondary">$</span>
+                                        <input type="number" step="0.01" name="bidAmount"
+                                               class="form-control"
+                                               th:placeholder="${'Min: $' + (item.currentHighestBid + item.minimumIncrement)}"
+                                               required>
+                                    </div>
+                                </div>
+
+                                <div id="noUserWarning" class="alert alert-warning py-2 mb-2"
+                                     style="display:none; font-size:0.85rem;">
+                                    ⚠ Please select a valid collector from the top menu first!
+                                </div>
+
+                                <button type="submit" class="btn btn-gold w-100 fw-bold btn-lg shadow">
+                                    🔨 PLACE A BID
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div th:if="${item.status.name() != 'ACTIVE_BIDDING' and item.status.name() != 'EXTENDED'}"
+                         class="alert alert-secondary text-center">
+                        Bidding closed for this item (status: <strong th:text="${item.status}"></strong>)
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<script th:replace="~{fragments/layout :: navScript}"></script>
+<script>
+    function validateBidForm(form) {
+        const collectorInput = form.querySelector('.targetCollectorId');
+        const warning = document.getElementById('noUserWarning');
+
+        if (!collectorInput || !collectorInput.value) {
+            warning.style.display = 'block';
+            return false;
+        }
+        warning.style.display = 'none';
+        return true;
+    }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

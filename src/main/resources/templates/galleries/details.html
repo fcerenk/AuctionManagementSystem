@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(title='Gallery Details')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: nav}"></nav>
+
+<main class="container">
+    <div class="mb-4">
+        <a href="/galleries" class="btn btn-outline-secondary btn-sm mb-3">&larr; Back to Galleries</a>
+        <h2 class="display-5" th:text="${gallery.galleryName}">Gallery Name</h2>
+        <p class="text-muted">
+            📍 <span th:text="${gallery.location}"></span> &nbsp;|&nbsp;
+            📅 Est: <span th:text="${gallery.establishYear}"></span> &nbsp;|&nbsp;
+            📞 <span th:text="${gallery.contactNumber}"></span>
+        </p>
+    </div>
+    <hr class="mb-4">
+
+    <ul class="nav nav-tabs mb-4" id="galleryTabs" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#auctions">
+                🔨 Active Auctions (<span th:text="${#lists.size(auctions)}">0</span>)
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#exhibitions">
+                🖼 Current Exhibitions (<span th:text="${#lists.size(exhibitions)}">0</span>)
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+
+        <div class="tab-pane fade show active" id="auctions">
+            <div th:if="${#lists.isEmpty(auctions)}" class="text-muted py-4 text-center">
+                No active auctions in this gallery at the moment.
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-4" th:each="auc : ${auctions}">
+                    <div class="card custom-card h-100">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title text-uppercase" th:text="${auc.name}">Auction</h5>
+                            <!-- startTime + endTime both shown -->
+                            <p class="card-text small text-muted mb-1">
+                                🟢 Start: <span
+                                    th:text="${#temporals.format(auc.startTime, 'dd MMM yyyy, HH:mm')}"></span>
+                            </p>
+                            <p class="card-text small text-muted mb-3">
+                                🔴 End: <strong class="text-danger"
+                                               th:text="${#temporals.format(auc.endTime, 'dd MMM yyyy, HH:mm')}"></strong>
+                            </p>
+                            <p class="card-text small text-muted mb-3">
+                                📦 <span th:text="${#lists.size(auc.auctionItems)}"></span> artwork(s) up for bidding
+                            </p>
+                            <a th:href="@{/auctions/{id}(id=${auc.id})}" class="btn btn-primary w-100 mt-auto">
+                                Enter Auction →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── EXHIBITIONS TAB ── -->
+        <div class="tab-pane fade" id="exhibitions">
+            <div th:if="${#lists.isEmpty(exhibitions)}" class="text-muted py-4 text-center">
+                No active exhibitions in this gallery at the moment.
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-4" th:each="ex : ${exhibitions}">
+                    <div class="card custom-card h-100 border-success">
+                        <div class="card-body">
+                            <h5 class="card-title" th:text="${ex.name}">Exhibition</h5>
+                            <p class="card-text small text-muted mb-1">
+                                🎨 <strong>Theme:</strong> <span th:text="${ex.theme}"></span>
+                            </p>
+                            <p class="card-text small text-muted mb-3">
+                                📅 <strong>Season:</strong> <span th:text="${ex.timeOfYear}"></span>
+                            </p>
+                            <hr>
+                            <h6 class="small fw-bold mb-3">Displayed Artworks (view only — not for sale):</h6>
+
+                            <div th:if="${#lists.isEmpty(ex.artworks)}" class="text-muted small">
+                                No artworks assigned yet.
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6" th:each="art : ${ex.artworks}">
+                                    <div class="card border-0 shadow-sm" style="border-radius:10px; overflow:hidden;">
+                                        <img th:src="@{'/images/art_' + ${art.id} + '.jpg'}"
+                                             style="height:110px; object-fit:cover; width:100%; background:#e8e8e8;"
+                                             alt="Artwork"
+                                             onerror="this.onerror=null; this.src='/images/artwork_placeholder.jpg';">
+                                        <div class="card-body p-2">
+                                            <div class="fw-bold small" th:text="${art.title}">Title</div>
+                                            <div class="text-muted" style="font-size:0.75rem;"
+                                                 th:text="'by ' + ${art.artist.member.name} + ' ' + ${art.artist.member.surname}">
+                                            </div>
+                                            <div style="font-size:0.72rem;" class="text-muted"
+                                                 th:text="${art.category} + ' · ' + ${art.madeYear}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: navScript}"></th:block>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <title th:text="${title}">Gallery Auction System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --primary: #1a2a3a;
+            --accent: #c5a059;
+            --text-main: #1a1a1a;
+            --text-muted: #555;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        h2, h5, .card-title {
+            color: var(--primary) !important;
+            font-weight: 700 !important;
+        }
+
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+
+        .custom-navbar {
+            background-color: var(--primary);
+            border-bottom: 4px solid var(--accent);
+            padding: 1rem 0;
+        }
+
+        .custom-card {
+            border: 1px solid rgba(0, 0, 0, 0.05) !important;
+            border-radius: 15px !important;
+            background: #fafafa !important;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08) !important;
+            transition: transform .3s, box-shadow .3s;
+        }
+
+        .custom-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 15px 30px rgba(197, 160, 89, 0.15) !important;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent);
+        }
+
+        .btn-gold {
+            background-color: var(--accent) !important;
+            color: #fff !important;
+            border: none;
+        }
+
+        .btn-gold:hover {
+            background-color: #b08d45 !important;
+        }
+
+        .bid-history-table {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .auction-header {
+            color: var(--primary);
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .balance-pill {
+            background: rgba(197, 160, 89, 0.18);
+            border: 1px solid var(--accent);
+            border-radius: 20px;
+            padding: 3px 12px;
+            font-size: .8rem;
+            color: #fff;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .balance-pill .bal-amount {
+            color: #7dd3a0;
+            font-weight: 700;
+        }
+
+        .role-tag {
+            font-size: .68rem;
+            padding: 1px 6px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .role-collector {
+            background: #e6f1fb;
+            color: #0c447c;
+        }
+
+        .role-artist {
+            background: #eaf3de;
+            color: #27500a;
+        }
+
+        .role-employee {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        #unauthorizedBar {
+            display: none;
+            background: #dc3545;
+            color: #fff;
+            text-align: center;
+            padding: 8px 0;
+            font-size: .88rem;
+            font-weight: 600;
+            letter-spacing: .3px;
+        }
+    </style>
+</head>
+
+<th:block th:fragment="nav">
+    <nav class="navbar navbar-expand-lg navbar-dark custom-navbar shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/galleries" style="color:var(--accent);">🎨 Gallery System</a>
+            <div class="ms-auto d-flex align-items-center gap-3">
+                <div class="balance-pill" id="balancePill">
+                    <span id="pillName">—</span>
+                    <span id="pillRoles"></span>
+                    <span>|</span>
+                    <span>💰 <span class="bal-amount" id="pillBalance">$0</span></span>
+                </div>
+                <span class="text-white-50 small">Login as:</span>
+                <select id="globalCollectorSelect"
+                        class="form-select bg-dark text-white border-0 shadow-sm"
+                        style="width:290px;"
+                        onchange="onUserChange(this)">
+                    <option value="" disabled selected>Select user...</option>
+
+                    <optgroup label="🛒 Collectors — can place bids">
+                        <option th:each="member : ${allMembers}"
+                                th:if="${member.collector != null}"
+                                th:value="${'C|' + member.collector.id + '|' + (member.artist != null ? 'artist' : '') + '|' + member.collector.balance}"
+                                th:text="${member.name + ' ' + member.surname + (member.artist != null ? ' [Collector + Artist]' : ' [Collector]')}"
+                                th:attr="data-name=${member.name + ' ' + member.surname},
+                                         data-balance=${member.collector.balance},
+                                         data-artist=${member.artist != null ? 'true' : 'false'},
+                                         data-type='collector'">
+                        </option>
+                    </optgroup>
+
+                    <optgroup label="👷 Employees — cannot place bids">
+                        <option th:each="emp : ${allEmployees}"
+                                th:value="${'E|' + emp.id + '||0'}"
+                                th:text="${emp.name + ' ' + emp.surname + ' [Employee]'}"
+                                th:attr="data-name=${emp.name + ' ' + emp.surname},
+                                         data-balance='',
+                                         data-artist='false',
+                                         data-type='employee'">
+                        </option>
+                    </optgroup>
+                </select>
+            </div>
+        </div>
+    </nav>
+
+    <div id="unauthorizedBar">
+        ⛔ Unauthorized: Employees cannot place bids. Only registered Collectors are authorized to participate in
+        auctions.
+    </div>
+</th:block>
+
+<th:block th:fragment="navScript">
+    <script>
+        (function () {
+            const saved = localStorage.getItem('galleryUser');
+            if (!saved) return;
+            const sel = document.getElementById('globalCollectorSelect');
+            if (!sel) return;
+            for (let i = 0; i < sel.options.length; i++) {
+                if (sel.options[i].value === saved) {
+                    sel.value = saved;
+                    applySelection(sel);
+                    break;
+                }
+            }
+        })();
+
+        function onUserChange(sel) {
+            localStorage.setItem('galleryUser', sel.value);
+            applySelection(sel);
+        }
+
+        function applySelection(sel) {
+            const val = sel.value;
+            if (!val) return;
+
+            const parts = val.split('|');
+            const type = parts[0];
+            const id = parts[1];
+            const isArtist = parts[2] === 'artist';
+            const balance = parseFloat(parts[3] || '0');
+
+            const opt = sel.options[sel.selectedIndex];
+            const name = opt.getAttribute('data-name') || opt.text;
+
+            const pill = document.getElementById('balancePill');
+            const unauthBar = document.getElementById('unauthorizedBar');
+
+            if (type === 'E') {
+                unauthBar.style.display = 'block';
+                pill.style.display = 'flex';
+                document.getElementById('pillName').textContent = name;
+                document.getElementById('pillBalance').textContent = 'N/A';
+                document.getElementById('pillRoles').innerHTML =
+                    '<span class="role-tag role-employee">Employee</span>';
+                document.querySelectorAll('.targetCollectorId').forEach(i => i.value = '');
+
+            } else {
+                unauthBar.style.display = 'none';
+                pill.style.display = 'flex';
+                document.getElementById('pillName').textContent = name;
+                document.getElementById('pillBalance').textContent =
+                    '$' + balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+                let tags = '<span class="role-tag role-collector">Collector</span>';
+                if (isArtist) tags += ' <span class="role-tag role-artist">Artist</span>';
+                document.getElementById('pillRoles').innerHTML = tags;
+
+                document.querySelectorAll('.targetCollectorId').forEach(i => i.value = id);
+            }
+        }
+    </script>
+</th:block>
+
+</html>

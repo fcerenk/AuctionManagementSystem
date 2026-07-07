@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(title='Digital Galleries')}"></head>
+
+<body>
+<nav th:replace="~{fragments/layout :: nav}"></nav>
+
+<main class="container">
+    <h2 class="mb-4">Digital Galleries</h2>
+
+    <div class="row">
+        <div class="col-md-4 mb-4" th:each="gallery : ${galleries}">
+            <div class="card custom-card h-100 p-4">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold text-primary mb-3" th:text="${gallery.galleryName}"></h5>
+                    <p class="card-text text-muted mb-1"><small>📍</small> <span th:text="${gallery.location}"></span>
+                    </p>
+                    <p class="card-text mb-1"><small>📅 Est: <span th:text="${gallery.establishYear}"></span></small></p>
+                    <p class="card-text mb-4"><small>📞 <span th:text="${gallery.contactNumber}"></span></small></p>
+
+                    <a th:href="@{/galleries/{id}(id=${gallery.id})}" class="btn btn-primary w-100">
+                        View Exhibitions & Auctions
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>
